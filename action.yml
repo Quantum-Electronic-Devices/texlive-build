@@ -1,0 +1,67 @@
+name: "Build PDFs"
+inputs:
+  tex-filename:
+    required: true
+    description: "The base name of the input tex file without the .tex extension."
+
+  output-filename:
+    required: true
+    description: "The base name of the output PDF file without the .pdf extension."
+
+outputs:
+  value:
+    description: "Mirrors the output filename"
+    value: ${{ inputs.output-filename }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate filenames
+      env:
+        TEX_FILENAME: ${{ inputs.tex-filename }}
+        OUTPUT_FILENAME: ${{ inputs.output-filename }}
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Restrict inputs to simple base names: no paths, options, whitespace,
+        # shell metacharacters, or line breaks.
+        [[ "$TEX_FILENAME" =~ ^[A-Za-z0-9_-]+$ ]] || {
+          echo "Invalid tex-filename: expected a simple base name." >&2
+          exit 1
+        }
+        [[ "$OUTPUT_FILENAME" =~ ^[A-Za-z0-9_-]+$ ]] || {
+          echo "Invalid output-filename: expected a simple base name." >&2
+          exit 1
+        }
+        [[ -f "$TEX_FILENAME.tex" ]] || {
+          echo "Input file not found: $TEX_FILENAME.tex" >&2
+          exit 1
+        }
+
+    - name: Run LaTeX in a Docker container
+      uses: docker://texlive/texlive@sha256:5912d6a33798957f4cd6ff1673819209f59300c378033d25066feb93270b90ce
+      with:
+        entrypoint: latexmk
+        args: -lualatex -cd "${{ inputs.tex-filename }}.tex"
+
+    - name: Rename PDF if a different output filename was set
+      env:
+        TEX_FILENAME: ${{ inputs.tex-filename }}
+        OUTPUT_FILENAME: ${{ inputs.output-filename }}
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if [[ "$TEX_FILENAME" != "$OUTPUT_FILENAME" ]]; then
+          [[ -f "$TEX_FILENAME.pdf" ]] || {
+            echo "Expected PDF not found: $TEX_FILENAME.pdf" >&2
+            exit 1
+          }
+          mv -- "$TEX_FILENAME.pdf" "$OUTPUT_FILENAME.pdf"
+        fi
+
+        [[ -f "$OUTPUT_FILENAME.pdf" ]] || {
+          echo "Expected output PDF not found: $OUTPUT_FILENAME.pdf" >&2
+          exit 1
+        }
