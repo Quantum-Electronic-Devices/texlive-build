@@ -5,13 +5,13 @@ inputs:
     description: "The base name of the input tex file without the .tex extension."
 
   output-filename:
-    required: true
-    description: "The base name of the output PDF file without the .pdf extension."
+    required: false
+    description: "The base name of the output PDF file without the .pdf extension. Defaults to tex-filename."
 
 outputs:
   value:
-    description: "Mirrors the output filename"
-    value: ${{ inputs.output-filename }}
+    description: "Mirrors the output filename, defaulting to tex-filename"
+    value: ${{ inputs.output-filename || inputs.tex-filename }}
 
 runs:
   using: "composite"
@@ -19,7 +19,7 @@ runs:
     - name: Validate filenames
       env:
         TEX_FILENAME: ${{ inputs.tex-filename }}
-        OUTPUT_FILENAME: ${{ inputs.output-filename }}
+        OUTPUT_FILENAME: ${{ inputs.output-filename || inputs.tex-filename }}
       shell: bash
       run: |
         set -euo pipefail
@@ -48,7 +48,7 @@ runs:
     - name: Rename PDF if a different output filename was set
       env:
         TEX_FILENAME: ${{ inputs.tex-filename }}
-        OUTPUT_FILENAME: ${{ inputs.output-filename }}
+        OUTPUT_FILENAME: ${{ inputs.output-filename || inputs.tex-filename }}
       shell: bash
       run: |
         set -euo pipefail
