@@ -40,7 +40,7 @@ runs:
         }
 
     - name: Run LaTeX in a Docker container
-      uses: docker://texlive/texlive@sha256:5912d6a33798957f4cd6ff1673819209f59300c378033d25066feb93270b90ce
+      uses: docker://texlive/texlive@sTL2025-historic
       with:
         entrypoint: latexmk
         args: -lualatex -cd "${{ inputs.tex-filename }}.tex"
